@@ -50,7 +50,7 @@ with echo.mock(**expectation) as client:
 Proxy
 -----
 
-```
+```python
 import settings
 
 
@@ -71,7 +71,7 @@ with echo.proxy(**expectation) as proxy:
 callback
 --------
 
-```
+```python
 import requests
 
 
