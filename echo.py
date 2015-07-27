@@ -13,7 +13,9 @@ log.setLevel(logging.DEBUG)
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
-    server, handler = loop.run_until_complete(api.start(loop))
+    tcp_port = 8080
+    server, handler, redis_pool = loop.run_until_complete(
+        api.start(loop, tcp_port))
 
     try:
         loop.run_forever()
@@ -21,6 +23,7 @@ if __name__ == '__main__':
         pass
     finally:
         loop.run_until_complete(handler.finish_connections(1.0))
+        loop.run_until_complete(redis_pool.clear())
         api.stop(loop)
 
     loop.close()

@@ -3,19 +3,53 @@
 import json
 from urllib.parse import urljoin
 
-import requests
+import aiohttp
+
+import pytest
 
 
-def test_get_mock_handler():
-    response = requests.get('http://127.0.0.1:8080/mocks/')
+content_type = 'application/json; charset=utf-8'
 
-    assert response.status_code == 200
+payload = {
+    'name': 'Joaozinho',
+    'age': 9,
+}
+
+str_payload = {
+    'name': 'Joaozinho',
+    'age': '9',
+}
+
+DEFAULT_HEADER = {
+    'Content-Length': '31',
+    'Content-Type': '',
+    'Host': 'localhost'
+}
+
+ZERO_LENGTH_HEADER = {
+    'Content-Length': '0',
+    'Content-Type': '',
+    'Host': 'localhost'
+}
+
+
+# Mock tests
+
+
+@pytest.mark.asyncio
+def test_get_mock(api_server):
+    url = urljoin(api_server, '/mocks/')
+    response = yield from aiohttp.request('GET', url)
+
+    assert response.status == 200
     assert response.reason == 'OK'
-    assert response.headers['content-type'] == 'application/json; charset=utf-8'
-    assert response.json() == {'mocks': []}
+    assert response.headers['content-type'] == content_type
+    response_json = yield from response.json()
+    assert response_json == {'mocks': {}}
 
 
-def test_put_mock_handler():
+@pytest.mark.asyncio
+def test_put_mock(api_server):
     response_must_contain = {
         'status_code': 201,
         'body': {
@@ -48,25 +82,67 @@ def test_put_mock_handler():
         'response': response_must_contain,
     }
 
-    base_url = 'http://127.0.0.1:8080/'
+    url = urljoin(api_server, '/mocks/')
 
     # Configure the mock
-    response = requests.put(urljoin(base_url, '/mocks/'),
-                            json.dumps(expectation),
-                            headers=request_headers)
+    response = yield from aiohttp.request('PUT', url,
+                                          data=json.dumps(expectation),
+                                          headers=request_headers)
 
-    assert response.status_code == 201
+    assert response.status == 201
     assert response.reason == 'Created'
-    assert response.headers['content-type'] == 'application/json; charset=utf-8'
-    assert 'path' in response.json().keys()
+    assert response.headers['content-type'] == content_type
+    response_json = yield from response.json()
+    assert 'path' in response_json.keys()
 
     # Use the mock
-    response = requests.post(urljoin(base_url, response.json()['path']),
-                             json.dumps(request_must_contain['body']),
-                             headers=request_headers)
+    post_url = urljoin(api_server, response_json['path'])
+    post_body = json.dumps(request_must_contain['body'])
+    response = yield from aiohttp.request('POST', post_url,
+                                          data=post_body,
+                                          headers=request_headers)
 
-    assert response.status_code == 201
+    assert response.status == 201
     assert response.reason == 'Created'
-    assert response.headers['content-type'] == 'application/json; charset=utf-8'
-    assert 'email' in response.json().keys()
-    assert 'name' in response.json().keys()
+    assert response.headers['content-type'] == content_type
+    response_json = yield from response.json()
+    assert 'email' in response_json.keys()
+    assert 'name' in response_json.keys()
+
+
+# Health
+
+
+@pytest.mark.asyncio
+def test_health(api_server):
+    url = urljoin(api_server, '/health/')
+    response = yield from aiohttp.request('GET', url)
+
+    assert response.status == 200
+    assert response.reason == 'OK'
+    assert response.headers['content-type'] == content_type
+    response_json = yield from response.json()
+    assert response_json == {'status': 'ok'}
+
+
+# Callback tests
+
+
+@pytest.mark.asyncio
+def test_queue_request_return_status_200(api_server):
+    response = yield from aiohttp.request('POST',
+                                          urljoin(api_server, '/callbacks/app/queue/'),
+                                          data=json.dumps(payload))
+
+    assert response.status == 200
+
+
+@pytest.mark.asyncio
+def test_queue_request_return_json(api_server):
+    response = yield from aiohttp.request('POST',
+                                          urljoin(api_server, '/callbacks/app/queue/'),
+                                          data=json.dumps(payload))
+
+    response_json = yield from response.json()
+    assert response_json['request']['method'] == 'POST'
+    assert response_json['request']['data'] == payload

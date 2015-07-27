@@ -2,50 +2,24 @@
 
 import json
 import uuid
-import hashlib
 import asyncio
 import logging
 
 from aiohttp import web
 
+import aioredis
+
+from echo.utils import (encode_json, decode_json, generate_key, normalize_path,
+                        request_to_dict, hash_dict, compare_hash)
 
 log = logging.getLogger(__name__)
 app = None
-
-
-# TODO: Move to a utils.py file
-@asyncio.coroutine
-def normalize_path(path):
-    """ Normalize path
-
-    Removes double slash from path
-    """
-    path = '/'.join([split for split in path.split('/') if split != ''])
-
-    if not path.startswith('/'):
-        path = '/{}'.format(path)
-
-    if not path.endswith('/'):
-        path = '{}/'.format(path)
-
-    return path
-
-
-# TODO: Move to a utils.py file
-@asyncio.coroutine
-def hash_dict(dictionary):
-    json_data = json.dumps(dictionary, sort_keys=True).encode('utf-8')
-    return hashlib.sha1(json_data).hexdigest()
-
-
-# TODO: Move to a utils.py file
-def compare_hash(expected_hash, received_hash):
-    return expected_hash == received_hash
+redis_pool = None
 
 
 @asyncio.coroutine
 def get_mock(request):
-    data = json.dumps({'mocks': []})
+    data = json.dumps({'mocks': request.app['mock_db']})
     return web.Response(text=data, content_type='application/json')
 
 
@@ -75,26 +49,82 @@ def put_proxy(request):
 
 
 @asyncio.coroutine
-def get_callback(request):
-    data = json.dumps({'callbacks': []})
+def all_callback(request):
+    app = request.match_info['app']
+    queue = request.match_info['queue']
+    key = yield from generate_key(app, queue)
+
+    with (yield from request.app['redis_pool']) as redis:
+        requests = yield from redis.lrange(key, 0, -1)
+        requests = [decode_json(r) for r in requests]
+        redis.delete(key)
+
+    data = json.dumps(requests)
     return web.Response(text=data, content_type='application/json')
 
 
 @asyncio.coroutine
-def put_callback(request):
-    return web.Response(text=json.dumps({'status': 'ok'}),
+def first_callback(request):
+    app = request.match_info['app']
+    queue = request.match_info['queue']
+    key = yield from generate_key(app, queue)
+
+    with (yield from request.app['redis_pool']) as redis:
+        request_ = yield from redis.lpop(key)
+        request_ = decode_json(request_)
+
+    return web.Response(text=json.dumps(request_),
+                        content_type='application/json')
+
+
+@asyncio.coroutine
+def last_callback(request):
+    app = request.match_info['app']
+    queue = request.match_info['queue']
+    key = yield from generate_key(app, queue)
+
+    with (yield from request.app['redis_pool']) as redis:
+        request_ = redis.rpop(key)
+        request_ = decode_json(request_)
+
+    return web.Response(text=json.dumps(request_),
+                        content_type='application/json')
+
+
+@asyncio.coroutine
+def clean_callback(request):
+    app = request.match_info['app']
+    queue = request.match_info['queue']
+    key = yield from generate_key(app, queue)
+
+    with (yield from request.app['redis_pool']) as redis:
+        redis.delete(key)
+
+    return web.Response(text=json.dumps({}),
                         content_type='application/json')
 
 
 @asyncio.coroutine
 def callback(request):
-    return web.Response(text=json.dumps({'status': 'ok'}),
+    # TODO: Add support for addtional_url
+
+    app = request.match_info['app']
+    queue = request.match_info['queue']
+    key = yield from generate_key(app, queue)
+
+    request_ = yield from request_to_dict(request)
+    json_ = yield from encode_json(request_)
+    with (yield from request.app['redis_pool']) as redis:
+        redis.rpush(key, json_)
+
+    return web.Response(text=json.dumps({'request': request_}),
                         content_type='application/json')
 
 
 @asyncio.coroutine
 def mock(request):
     received = yield from request.json()
+    # Check/Validate for KeyError
     config = request.app['mock_db'][request.path]
     response = config['response']['body']
     expected = config['request']['body']
@@ -115,26 +145,50 @@ def mock(request):
 
 
 @asyncio.coroutine
-def start(loop):
+def health(request):
+    return web.Response(text=json.dumps({'status': 'ok'}),
+                        content_type='application/json')
+
+
+@asyncio.coroutine
+def start(loop, tcp_port):
     app = web.Application(loop=loop)
     app['mock_db'] = {}
-    app['callback_db'] = {}
+    # TODO: Use prettyconf here
+    redis_pool = yield from aioredis.create_pool(('localhost', 6379),
+                                                 minsize=5, maxsize=10,
+                                                 loop=loop)
+    app['redis_pool'] = redis_pool
 
+    # Mock
     app.router.add_route('GET', '/mocks/', get_mock)
     app.router.add_route('PUT', '/mocks/', put_mock)
+
+    # Proxies
     app.router.add_route('GET', '/proxies/', get_proxy)
     app.router.add_route('PUT', '/proxies/', put_proxy)
-    app.router.add_route('GET', '/callbacks/', get_callback)
-    app.router.add_route('PUT', '/callbacks/', put_callback)
-    app.router.add_route('*', '/callback/', callback)
 
+    # Callbacks
+    app.router.add_route('*', '/callbacks/{app}/{queue}/', callback)
+    app.router.add_route('GET', '/callbacks/_all/{app}/{queue}/', all_callback)
+    app.router.add_route('GET', '/callbacks/_first/{app}/{queue}/',
+                         first_callback)
+    app.router.add_route('GET', '/callbacks/_last/{app}/{queue}/',
+                         last_callback)
+    app.router.add_route('GET', '/callbacks/_clean/{app}/{queue}/',
+                         clean_callback)
+
+    # Health
+    app.router.add_route('GET', '/health/', health)
+
+    # TODO: Use prettyconf here
     host = '127.0.0.1'
-    port = 8080
+    port = tcp_port
     handler = app.make_handler()
     server = yield from loop.create_server(handler, host, port)
     name = server.sockets[0].getsockname()
     log.info('API started at http://{}:{}/'.format(*name))
-    return server, handler
+    return server, handler, redis_pool
 
 
 def stop(loop):
