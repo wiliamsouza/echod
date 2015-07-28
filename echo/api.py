@@ -59,7 +59,7 @@ def all_callback(request):
         requests = [decode_json(r) for r in requests]
         redis.delete(key)
 
-    data = json.dumps(requests)
+    data = json.dumps({'requests': requests})
     return web.Response(text=data, content_type='application/json')
 
 
@@ -73,8 +73,8 @@ def first_callback(request):
         request_ = yield from redis.lpop(key)
         request_ = decode_json(request_)
 
-    return web.Response(text=json.dumps(request_),
-                        content_type='application/json')
+    data = json.dumps({'request': request_})
+    return web.Response(text=data, content_type='application/json')
 
 
 @asyncio.coroutine
@@ -84,11 +84,11 @@ def last_callback(request):
     key = yield from generate_key(app, queue)
 
     with (yield from request.app['redis_pool']) as redis:
-        request_ = redis.rpop(key)
+        request_ = yield from redis.rpop(key)
         request_ = decode_json(request_)
 
-    return web.Response(text=json.dumps(request_),
-                        content_type='application/json')
+    data = json.dumps({'request': request_})
+    return web.Response(text=data, content_type='application/json')
 
 
 @asyncio.coroutine
@@ -155,6 +155,7 @@ def start(loop, tcp_port):
     app = web.Application(loop=loop)
     app['mock_db'] = {}
     # TODO: Use prettyconf here
+    # TODO: Use utf-8 as enconding here
     redis_pool = yield from aioredis.create_pool(('localhost', 6379),
                                                  minsize=5, maxsize=10,
                                                  loop=loop)

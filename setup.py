@@ -14,7 +14,7 @@ dev_requires = ['pyflakes', 'pep8', 'pylint', 'check-manifest',
                 'ipython', 'ipdb', 'sphinx', 'sphinx_rtd_theme',
                 'sphinxcontrib-napoleon']
 tests_require = ['pytest-cov', 'pytest-cache', 'pytest-timeout',
-                 'pytest-asyncio', 'tox']
+                 'pytest-asyncio', 'tox', 'redis']
 dev_requires.append(tests_require)
 
 # Get the long description

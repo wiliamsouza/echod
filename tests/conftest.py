@@ -2,18 +2,21 @@
 
 import pytest
 
-import aioredis
-
 from echo import api
 
 
-@pytest.yield_fixture()
-def redis_flush(event_loop):
-    redis = yield from aioredis.create_redis(('127.0.0.1', 6379))
+@pytest.yield_fixture(autouse=True)
+def redis():
+    """ Redis
 
+    We uses a normal(not asyncio) version of redis lib here because of some
+    issues using asyncio version and yield fixtures.
+    """
+    import redis
+
+    redis = redis.StrictRedis(host='127.0.0.1', port=6379)
     yield redis
-    yield from redis.flushdb()
-    redis.close()
+    redis.flushdb()
 
 
 @pytest.yield_fixture()
