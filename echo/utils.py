@@ -38,6 +38,8 @@ def decode_json(data):
         return dict()
 
 
+# TODO: Changes to use https://github.com/rbaier/python-urltools/
+#       do not forget PUBLIC_SUFFIX_LIST env var!
 @asyncio.coroutine
 def normalize_path(path):
     """ Normalize path
