@@ -1,12 +1,13 @@
+import os
+import re
 import sys
-from os import path
-from codecs import open
+import codecs
 
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Command
 from setuptools.command.test import test as TestCommand
 
 
-here = path.abspath(path.dirname(__file__))
+here = os.path.abspath(os.path.dirname(__file__))
 
 setup_requires = ['pytest']
 install_requires = ['aiohttp==0.16.5', 'aioredis==0.2.2']
@@ -14,12 +15,38 @@ dev_requires = ['pyflakes', 'pep8', 'pylint', 'check-manifest',
                 'ipython', 'ipdb', 'sphinx', 'sphinx_rtd_theme',
                 'sphinxcontrib-napoleon']
 tests_require = ['pytest-cov', 'pytest-cache', 'pytest-timeout',
-                 'pytest-asyncio', 'tox', 'redis']
+                 'pytest_asyncio', 'tox', 'redis']
 dev_requires.append(tests_require)
 
+version = "0.0.0"
+with codecs.open(os.path.join(here, "CHANGES.md"), encoding='utf-8') as changes:
+    for line in changes:
+        match = re.match(b'^#*\s*(?P<version>[0-9]+\.[0-9]+(\.[0-9]+)?)$', bytes(line, encoding='utf-8'))
+        if match:
+            version = match.group("version")
+            break
+
 # Get the long description
-with open(path.join(here, 'README.md'), encoding='utf-8') as f:
+with codecs.open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
+
+# Get version
+with codecs.open(os.path.join(here, 'CHANGES.md'), encoding='utf-8') as f:
+    changelog = f.read()
+
+
+class VersionCommand(Command):
+    description = "print library version"
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        print(version)
 
 
 class PyTest(TestCommand):
@@ -34,6 +61,30 @@ class PyTest(TestCommand):
         import pytest
         errno = pytest.main(self.test_args)
         sys.exit(errno)
+
+
+class Tox(TestCommand):
+    user_options = [('tox-args=', 'a', "Arguments to pass to tox")]
+
+    def initialize_options(self):
+        TestCommand.initialize_options(self)
+        self.tox_args = None
+
+    def finalize_options(self):
+        TestCommand.finalize_options(self)
+        self.test_args = []
+        self.test_suite = True
+
+    def run_tests(self):
+        # import here, cause outside the eggs aren't loaded
+        import tox
+        import shlex
+        args = self.tox_args
+        if args:
+            args = shlex.split(self.tox_args)
+        errno = tox.cmdline(args=args)
+        sys.exit(errno)
+
 
 setup(
     name='echo',
@@ -60,5 +111,9 @@ setup(
         'dev': dev_requires,
         'test': tests_require,
     },
-    cmdclass={'test': PyTest},
+    cmdclass={
+        "version": VersionCommand,
+        "tox": Tox,
+        'test': PyTest
+    },
 )
