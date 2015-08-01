@@ -89,9 +89,9 @@ class Tox(TestCommand):
 
 
 setup(
-    name='echo',
+    name='echod',
     version='0.1.0',
-    description='An Echo',
+    description='Echo is a mock server, chaos proxy and a callback recorder.',
     long_description=long_description,
     url='https://github.com/wiliamsouza/echo',
     author='The Echo Authors',
@@ -99,10 +99,13 @@ setup(
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
-        'Topic :: Software Development :: Library',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
+        'Environment :: No Input/Output (Daemon)',
+        'Topic :: Internet :: WWW/HTTP :: HTTP Servers',
+        'Topic :: Software Development :: Libraries',
+        'Topic :: Software Development :: Testing'
     ],
     keywords='mock chaos monkey proxy callback',
     packages=find_packages(exclude=['docs', 'tests*']),
