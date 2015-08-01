@@ -1,6 +1,9 @@
 echo
 ====
 
+[![Build Status](https://travis-ci.org/wiliamsouza/echo.svg)](https://travis-ci.org/wiliamsouza/echo)
+[![Coverage Status](https://coveralls.io/repos/wiliamsouza/echo/badge.svg?branch=master&service=github)](https://coveralls.io/github/wiliamsouza/echo?branch=master)
+
 Echo is a fully configurable mock server, TCP chaos monkey proxy and an HTTP
 callback recorder. It is perfect to test external services.
 
