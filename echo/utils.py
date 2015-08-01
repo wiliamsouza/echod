@@ -11,16 +11,16 @@ def generate_key(app, queue):
 
 
 @asyncio.coroutine
-def request_to_dict(request_):
+def request_to_dict(request):
     try:
-        data = yield from request_.json()
+        data = yield from request.json()
     except:
-        data = yield from request_.text()
+        data = yield from request.text()
 
-    header = dict(request_.headers)
+    header = dict(request.headers)
 
     return {
-        'method': request_.method,
+        'method': request.method,
         'header': header,
         'data': data,
     }
@@ -28,12 +28,12 @@ def request_to_dict(request_):
 
 @asyncio.coroutine
 def encode_json(data):
-    return json.dumps(data).encode('latin-1')
+    return json.dumps(data)
 
 
 def decode_json(data):
     if data:
-        return json.loads(data.decode('latin-1'))
+        return json.loads(data)
     else:
         return dict()
 
