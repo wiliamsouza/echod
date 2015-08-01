@@ -22,13 +22,15 @@ str_payload = {
     'age': '9',
 }
 
-DEFAULT_HEADER = {
+json_payload = json.dumps(payload)
+
+default_header = {
     'Content-Length': '31',
     'Content-Type': '',
     'Host': 'localhost'
 }
 
-ZERO_LENGTH_HEADER = {
+zero_length_header = {
     'Content-Length': '0',
     'Content-Type': '',
     'Host': 'localhost'
@@ -132,18 +134,19 @@ def test_health(api_server):
 
 @pytest.mark.asyncio
 def test_queue_request_return_status_200(api_server):
+    url = urljoin(api_server, urljoin(api_server, '/callbacks/app/queue/'))
     response = yield from aiohttp.request('POST',
-                                          urljoin(api_server, urljoin(api_server, '/callbacks/app/queue/')),
-                                          data=json.dumps(payload))
+                                          url,
+                                          data=json_payload)
 
     assert response.status == 200
 
 
 @pytest.mark.asyncio
 def test_queue_request_return_json(api_server):
-    response = yield from aiohttp.request('POST',
-                                          urljoin(api_server, urljoin(api_server, '/callbacks/app/queue/')),
-                                          data=json.dumps(payload))
+    url = urljoin(api_server, urljoin(api_server, '/callbacks/app/queue/'))
+    response = yield from aiohttp.request('POST', url,
+                                          data=json_payload)
 
     response_json = yield from response.json()
     assert response_json['request']['method'] == 'POST'
@@ -152,7 +155,8 @@ def test_queue_request_return_json(api_server):
 
 @pytest.mark.asyncio
 def test_queue_request_store_request(api_server, redis):
-    yield from aiohttp.request('POST', urljoin(api_server, '/callbacks/app/queue/'), data=json.dumps(payload))
+    url = urljoin(api_server, '/callbacks/app/queue/')
+    yield from aiohttp.request('POST', url, data=json_payload)
 
     assert redis.llen('app-queue') == 1
 
@@ -160,7 +164,7 @@ def test_queue_request_store_request(api_server, redis):
 @pytest.mark.asyncio
 def test_queue_request_store_json(api_server, redis):
     url = urljoin(api_server, '/callbacks/app/queue/')
-    yield from aiohttp.request('POST', url, data=json.dumps(payload),
+    yield from aiohttp.request('POST', url, data=json_payload,
                                headers={'X-Region': 'Sao_Paulo'})
 
     db_json = decode_json(redis.rpop('app-queue'))
@@ -173,20 +177,24 @@ def test_queue_request_store_json(api_server, redis):
 """
 @pytest.mark.asyncio
 def test_queue_request_with_additional_url_return_status_200(api_server):
-    response = yield from aiohttp.request('POST', '/callbacks/app/queue/some/more/url/here', data=json.dumps(payload))
+    url = '/callbacks/app/queue/some/more/url/here'
+    response = yield from aiohttp.request('POST', url,
+                                          data=json_payload)
 
     assert response.status == 200
 
 
 @pytest.mark.asyncio
 def test_queue_request_with_additional_url_json(api_server, redis):
-    yield from aiohttp.request('POST', '/callbacks/app/queue/some/more/url/here', data=json.dumps(payload))
+    url = '/callbacks/app/queue/some/more/url/here'
+    yield from aiohttp.request('POST', url,
+                               data=json_payload)
 
     expected_data = {
         'method': 'POST',
         'data': payload,
         'additional_url': 'some/more/url/here',
-        'header': DEFAULT_HEADER,
+        'header': default_header,
     }
     assert decode_json(redis.rpop('app-queue')) == expected_data
 """
@@ -194,17 +202,20 @@ def test_queue_request_with_additional_url_json(api_server, redis):
 
 @pytest.mark.asyncio
 def test_queue_request_store_multiple_requests(api_server, redis):
-    yield from aiohttp.request('POST', urljoin(api_server, '/callbacks/app/queue/'), data=json.dumps(payload))
-    yield from aiohttp.request('POST', urljoin(api_server, '/callbacks/app/queue/'), data=json.dumps(payload))
-    yield from aiohttp.request('POST', urljoin(api_server, '/callbacks/app/queue/'), data=json.dumps(payload))
+    url = urljoin(api_server, '/callbacks/app/queue/')
+    yield from aiohttp.request('POST', url, data=json_payload)
+    yield from aiohttp.request('POST', url, data=json_payload)
+    yield from aiohttp.request('POST', url, data=json_payload)
 
     assert redis.llen('app-queue') == 3
 
 
 @pytest.mark.asyncio
 def test_queue_request_store_request_different_apps(api_server, redis):
-    yield from aiohttp.request('POST', urljoin(api_server, '/callbacks/app1/queue/'), data=json.dumps(payload))
-    yield from aiohttp.request('POST', urljoin(api_server, '/callbacks/app2/queue/'), data=json.dumps(payload))
+    url1 = urljoin(api_server, '/callbacks/app1/queue/')
+    url2 = urljoin(api_server, '/callbacks/app2/queue/')
+    yield from aiohttp.request('POST', url1, data=json_payload)
+    yield from aiohttp.request('POST', url2, data=json_payload)
 
     assert redis.llen('app1-queue') == 1
     assert redis.llen('app2-queue') == 1
@@ -212,8 +223,10 @@ def test_queue_request_store_request_different_apps(api_server, redis):
 
 @pytest.mark.asyncio
 def test_queue_request_store_request_different_queues(api_server, redis):
-    yield from aiohttp.request('POST', urljoin(api_server, '/callbacks/app/queue1/'), data=json.dumps(payload))
-    yield from aiohttp.request('POST', urljoin(api_server, '/callbacks/app/queue2/'), data=json.dumps(payload))
+    url1 = urljoin(api_server, '/callbacks/app/queue1/')
+    url2 = urljoin(api_server, '/callbacks/app/queue2/')
+    yield from aiohttp.request('POST', url1, data=json_payload)
+    yield from aiohttp.request('POST', url2, data=json_payload)
 
     assert redis.llen('app-queue1') == 1
     assert redis.llen('app-queue2') == 1
@@ -221,22 +234,26 @@ def test_queue_request_store_request_different_queues(api_server, redis):
 
 @pytest.mark.asyncio
 def test_get_requests_return_status_200(api_server):
-    response = yield from aiohttp.request('GET', urljoin(api_server, '/callbacks/_all/app/queue/'))
+    url = urljoin(api_server, '/callbacks/_all/app/queue/')
+    response = yield from aiohttp.request('GET', url)
     assert response.status == 200
 
 
 @pytest.mark.asyncio
 def test_get_requests_empty(api_server):
-    response = yield from aiohttp.request('GET', urljoin(api_server, '/callbacks/_all/app/queue/'))
+    url = urljoin(api_server, '/callbacks/_all/app/queue/')
+    response = yield from aiohttp.request('GET', url)
     response_json = yield from response.json()
     assert response_json == {'requests': []}
 
 
 @pytest.mark.asyncio
 def test_get_requests_one_request(api_server):
-    yield from aiohttp.request('POST', urljoin(api_server, '/callbacks/app/queue/'), data=json.dumps(payload))
+    url = urljoin(api_server, '/callbacks/app/queue/')
+    yield from aiohttp.request('POST', url, data=json_payload)
 
-    response = yield from aiohttp.request('GET', urljoin(api_server, '/callbacks/_all/app/queue/'))
+    url_all = urljoin(api_server, '/callbacks/_all/app/queue/')
+    response = yield from aiohttp.request('GET', url_all)
 
     response_json = yield from response.json()
 
@@ -248,21 +265,28 @@ def test_get_requests_one_request(api_server):
 """
 @pytest.mark.asyncio
 def test_get_requests_multiple_request(api_server):
-    yield from aiohttp.request('POST', urljoin(api_server, '/callbacks/app/queue/'), data=json.dumps(payload))
-    yield from aiohttp.request('PUT', urljoin(api_server, '/callbacks/app/queue/'), data=json.dumps(payload))
-    yield from aiohttp.request('PATCH', urljoin(api_server, '/callbacks/app/queue/'), data=json.dumps(payload))
+    url = urljoin(api_server, '/callbacks/app/queue/')
+    yield from aiohttp.request('POST', url, data=json_payload)
+    yield from aiohttp.request('PUT', url, data=json_payload)
+    yield from aiohttp.request('PATCH', url, data=json_payload)
     # TODO: Make it work
-    # yield from aiohttp.request('GET', urljoin(api_server, '/callbacks/app/queue/'), query_string=payload)
-    yield from aiohttp.request('DELETE', urljoin(api_server, '/callbacks/app/queue/'))
+    # yield from aiohttp.request('GET', url, query_string=payload)
+    yield from aiohttp.request('DELETE', url)
 
-    response = yield from aiohttp.request('GET', urljoin(api_server, '/callbacks/_all/app/queue/'))
+    url_all = urljoin(api_server, '/callbacks/_all/app/queue/')
+    response = yield from aiohttp.request('GET', )
 
     expected_data = [
-        {'method': 'POST', 'data': payload, 'header': DEFAULT_HEADER, 'additional_url': ''},
-        {'method': 'PUT', 'data': payload, 'header': DEFAULT_HEADER, 'additional_url': ''},
-        {'method': 'PATCH', 'data': payload, 'header': DEFAULT_HEADER, 'additional_url': ''},
-        {'method': 'GET', 'data': str_payload, 'header': ZERO_LENGTH_HEADER, 'additional_url': ''},
-        {'method': 'DELETE', 'data': {}, 'header': ZERO_LENGTH_HEADER, 'additional_url': ''},
+        {'method': 'POST', 'data': payload, 'header': default_header,
+         'additional_url': ''},
+        {'method': 'PUT', 'data': payload, 'header': default_header,
+         'additional_url': ''},
+        {'method': 'PATCH', 'data': payload, 'header': default_header,
+         'additional_url': ''},
+        {'method': 'GET', 'data': str_payload, 'header': zero_length_header,
+         'additional_url': ''},
+        {'method': 'DELETE', 'data': {}, 'header': zero_length_header,
+         'additional_url': ''},
     ]
 
     response_json = yield from response.json()
@@ -272,21 +296,25 @@ def test_get_requests_multiple_request(api_server):
 
 @pytest.mark.asyncio
 def test_get_requests_remove_key(api_server, redis):
-    yield from aiohttp.request('POST', urljoin(api_server, '/callbacks/app/queue/'), data=json.dumps(payload))
-    yield from aiohttp.request('GET', urljoin(api_server, '/callbacks/_all/app/queue/'))
+    url = urljoin(api_server, '/callbacks/app/queue/')
+    url_all = urljoin(api_server, '/callbacks/_all/app/queue/')
+    yield from aiohttp.request('POST', url, data=json_payload)
+    yield from aiohttp.request('GET', url_all)
 
     assert not redis.exists('app-queue')
 
 
 @pytest.mark.asyncio
 def test_first_request_return_status_200(api_server):
-    response = yield from aiohttp.request('GET', urljoin(api_server, '/callbacks/_first/app/queue/'))
+    url = urljoin(api_server, '/callbacks/_first/app/queue/')
+    response = yield from aiohttp.request('GET', url)
     assert response.status == 200
 
 
 @pytest.mark.asyncio
 def test_first_request_empty(api_server):
-    response = yield from aiohttp.request('GET', urljoin(api_server, '/callbacks/_first/app/queue/'))
+    url = urljoin(api_server, '/callbacks/_first/app/queue/')
+    response = yield from aiohttp.request('GET', url)
 
     response_json = yield from response.json()
     assert response_json == {'request': {}}
@@ -294,17 +322,11 @@ def test_first_request_empty(api_server):
 
 @pytest.mark.asyncio
 def test_first_request_one_request(api_server):
-    yield from aiohttp.request('POST', urljoin(api_server, '/callbacks/app/queue/'), data=json.dumps(payload))
+    url = urljoin(api_server, '/callbacks/app/queue/')
+    yield from aiohttp.request('POST', url, data=json_payload)
 
-    response = yield from aiohttp.request('GET', urljoin(api_server, '/callbacks/_first/app/queue/'))
-    expected_data = {
-        'request': {
-            'method': 'POST',
-            'data': payload,
-            'additional_url': '',
-            'header': DEFAULT_HEADER,
-        }
-    }
+    url_first = urljoin(api_server, '/callbacks/_first/app/queue/')
+    response = yield from aiohttp.request('GET', url_first)
     response_json = yield from response.json()
 
     assert response_json['request']['method'] == 'POST'
@@ -313,16 +335,15 @@ def test_first_request_one_request(api_server):
 
 @pytest.mark.asyncio
 def test_first_request_multiple_request(api_server):
-    yield from aiohttp.request('POST', urljoin(api_server, '/callbacks/app/queue/'), data=json.dumps(payload))
-    yield from aiohttp.request('PUT', urljoin(api_server, '/callbacks/app/queue/'), data=json.dumps(payload))
-    yield from aiohttp.request('PATCH', urljoin(api_server, '/callbacks/app/queue/'), data=json.dumps(payload))
-    # yield from aiohttp.request('GET', urljoin(api_server, '/callbacks/app/queue/'), query_string=payload)
-    yield from aiohttp.request('DELETE', urljoin(api_server, '/callbacks/app/queue/'))
+    url = urljoin(api_server, '/callbacks/app/queue/')
+    yield from aiohttp.request('POST', url, data=json_payload)
+    yield from aiohttp.request('PUT', url, data=json_payload)
+    yield from aiohttp.request('PATCH', url, data=json_payload)
+    # yield from aiohttp.request('GET', url, query_string=payload)
+    yield from aiohttp.request('DELETE', url)
 
-    response = yield from aiohttp.request('GET', urljoin(api_server, '/callbacks/_first/app/queue/'))
-
-    expected_data = {'method': 'POST', 'data': payload, 'header': DEFAULT_HEADER, 'additional_url': ''}
-
+    url_first = urljoin(api_server, '/callbacks/_first/app/queue/')
+    response = yield from aiohttp.request('GET', url_first)
     response_json = yield from response.json()
 
     assert response_json['request']['method'] == 'POST'
@@ -331,13 +352,15 @@ def test_first_request_multiple_request(api_server):
 
 @pytest.mark.asyncio
 def test_last_request_return_status_200(api_server):
-    response = yield from aiohttp.request('GET', urljoin(api_server, '/callbacks/_last/app/queue/'))
+    url = urljoin(api_server, '/callbacks/_last/app/queue/')
+    response = yield from aiohttp.request('GET', url)
     assert response.status == 200
 
 
 @pytest.mark.asyncio
 def test_last_request_empty(api_server):
-    response = yield from aiohttp.request('GET', urljoin(api_server, '/callbacks/_last/app/queue/'))
+    url = urljoin(api_server, '/callbacks/_last/app/queue/')
+    response = yield from aiohttp.request('GET', url)
 
     response_json = yield from response.json()
     assert response_json == {'request': {}}
@@ -346,7 +369,7 @@ def test_last_request_empty(api_server):
 @pytest.mark.asyncio
 def test_last_request_one_request(api_server):
     url = urljoin(api_server, '/callbacks/app/queue/')
-    yield from aiohttp.request('POST', url, data=json.dumps(payload))
+    yield from aiohttp.request('POST', url, data=json_payload)
 
     url_last = urljoin(api_server, '/callbacks/_last/app/queue/')
     response = yield from aiohttp.request('GET', url_last)
@@ -397,14 +420,14 @@ def test_clean_requests_none_request_return_empty_json(api_server):
     assert response_json == {}
 
 
-
 @pytest.mark.asyncio
 def test_clean_requests_multiple_requests(api_server, redis):
     url = urljoin(api_server, '/callbacks/app/queue/')
-    yield from aiohttp.request('POST', url, data=json.dumps(payload))
-    yield from aiohttp.request('PUT', url, data=json.dumps(payload))
-    yield from aiohttp.request('PATCH', url, data=json.dumps(payload))
+    yield from aiohttp.request('POST', url, data=json_payload)
+    yield from aiohttp.request('PUT', url, data=json_payload)
+    yield from aiohttp.request('PATCH', url, data=json_payload)
     yield from aiohttp.request('DELETE', url)
 
-    yield from aiohttp.request('GET', urljoin(api_server, '/callbacks/_clean/app/queue/'))
+    url_clean = urljoin(api_server, '/callbacks/_clean/app/queue/')
+    yield from aiohttp.request('GET', url_clean)
     assert not redis.exists('app-queue')
