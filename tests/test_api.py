@@ -167,7 +167,7 @@ def test_queue_request_store_json(api_server, redis):
     yield from aiohttp.request('POST', url, data=json_payload,
                                headers={'X-Region': 'Sao_Paulo'})
 
-    db_json = decode_json(redis.rpop('app-queue'))
+    db_json = decode_json(redis.rpop('app-queue').decode('utf-8'))
 
     assert db_json['header']['X-REGION'] == 'Sao_Paulo'
     assert db_json['method'] == 'POST'

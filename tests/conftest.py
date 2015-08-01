@@ -21,11 +21,11 @@ def redis():
 
 @pytest.yield_fixture()
 def api_server(event_loop, unused_tcp_port):
-    tcp_port = unused_tcp_port
+    api_port = unused_tcp_port
     server, handler, redis_pool = event_loop.run_until_complete(
-        api.start(event_loop, tcp_port))
+        api.start(event_loop, api_port=api_port))
 
-    yield 'http://127.0.0.1:{}/'.format(tcp_port)
+    yield 'http://127.0.0.1:{}/'.format(api_port)
     event_loop.run_until_complete(handler.finish_connections(1.0))
     event_loop.run_until_complete(redis_pool.clear())
     api.stop(event_loop)
