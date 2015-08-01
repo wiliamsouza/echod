@@ -153,7 +153,7 @@ def health(request):
 
 
 @asyncio.coroutine
-def start(loop, api_host='127.0.0.1', api_port=8080):
+def start(loop, api_host='127.0.0.1', api_port=9876):
     app = web.Application(loop=loop)
     app['mock_db'] = {}
     redis_address = (config('ECHO_REDIS_HOST', default='127.0.0.1'),
