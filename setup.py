@@ -15,7 +15,7 @@ dev_requires = ['pyflakes', 'pep8', 'pylint', 'check-manifest',
                 'ipython', 'ipdb', 'sphinx', 'sphinx_rtd_theme',
                 'sphinxcontrib-napoleon']
 tests_require = ['pytest-cov', 'pytest-cache', 'pytest-timeout',
-                 'pytest_asyncio', 'tox', 'redis']
+                 'pytest-asyncio', 'tox', 'redis']
 dev_requires.append(tests_require)
 
 version = "0.0.0"

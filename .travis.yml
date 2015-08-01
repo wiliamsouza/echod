@@ -5,6 +5,7 @@ python:
     - "3.4"
 
 script:
+    - pip install pytest-asyncio
     - python setup.py test
 
 after_success:
