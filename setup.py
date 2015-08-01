@@ -10,7 +10,7 @@ from setuptools.command.test import test as TestCommand
 here = os.path.abspath(os.path.dirname(__file__))
 
 setup_requires = ['pytest']
-install_requires = ['aiohttp==0.16.5', 'aioredis==0.2.2']
+install_requires = ['aiohttp==0.16.5', 'aioredis==0.2.2', 'prettyconf==0.3.3']
 dev_requires = ['pyflakes', 'pep8', 'pylint', 'check-manifest',
                 'ipython', 'ipdb', 'sphinx', 'sphinx_rtd_theme',
                 'sphinxcontrib-napoleon']
@@ -19,9 +19,11 @@ tests_require = ['pytest-cov', 'pytest-cache', 'pytest-timeout',
 dev_requires.append(tests_require)
 
 version = "0.0.0"
-with codecs.open(os.path.join(here, "CHANGES.md"), encoding='utf-8') as changes:
+changes = os.path.join(here, "CHANGES.md")
+match = b'^#*\s*(?P<version>[0-9]+\.[0-9]+(\.[0-9]+)?)$'
+with codecs.open(changes, encoding='utf-8') as changes:
     for line in changes:
-        match = re.match(b'^#*\s*(?P<version>[0-9]+\.[0-9]+(\.[0-9]+)?)$', bytes(line, encoding='utf-8'))
+        match = re.match(match, bytes(line, encoding='utf-8'))
         if match:
             version = match.group("version")
             break
@@ -115,5 +117,10 @@ setup(
         "version": VersionCommand,
         "tox": Tox,
         'test': PyTest
+    },
+    entry_points={
+        'console_scripts': [
+            'echod = echo.echod:main',
+        ]
     },
 )
