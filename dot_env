@@ -1,0 +1,12 @@
+# This file is used to configure your virtualenv and points to
+# a locally installed projects dependencies if you don't like install it local
+# you can use Docker please refer to README to more info.
+
+ECHO_DEBUG=True
+
+ECHO_API_HOST=127.0.0.1
+ECHO_API_PORT=9876
+
+ECHO_REDIS_HOST=127.0.0.1
+ECHO_REDIS_PORT=6379
+ECHO_REDIS_DB=0

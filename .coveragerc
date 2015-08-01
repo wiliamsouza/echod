@@ -1,0 +1,3 @@
+[report]
+omit =
+   echo/echod.py

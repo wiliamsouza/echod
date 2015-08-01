@@ -1,0 +1,12 @@
+echo:
+  image: wiliamsouza/echo:latest
+  command: echod
+  ports:
+    - "9876:9876"
+  links:
+    - redis
+  env_file:
+    - docker_env
+
+redis:
+  image: redis
