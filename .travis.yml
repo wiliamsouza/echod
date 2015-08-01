@@ -4,6 +4,9 @@ python:
     - "3.3"
     - "3.4"
 
+services:
+      - redis-server
+
 script:
     - pip install pytest-asyncio
     - python setup.py test
