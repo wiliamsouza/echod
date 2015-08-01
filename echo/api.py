@@ -5,9 +5,11 @@ import uuid
 import asyncio
 import logging
 
+import aioredis
+
 from aiohttp import web
 
-import aioredis
+from prettyconf import config
 
 from echo.utils import (encode_json, decode_json, generate_key, normalize_path,
                         request_to_dict, hash_dict, compare_hash)
@@ -151,14 +153,15 @@ def health(request):
 
 
 @asyncio.coroutine
-def start(loop, tcp_port):
+def start(loop, api_host='127.0.0.1', api_port=8080):
     app = web.Application(loop=loop)
     app['mock_db'] = {}
-    # TODO: Use prettyconf here
-    # TODO: Use utf-8 as enconding here
-    redis_pool = yield from aioredis.create_pool(('localhost', 6379),
+    redis_address = (config('ECHO_REDIS_HOST', default='127.0.0.1'),
+                     config('ECHO_REDIS_PORT', default=6379))
+    redis_db = config('ECHO_REDIS_DB', default=0)
+    redis_pool = yield from aioredis.create_pool(redis_address, db=redis_db,
                                                  minsize=5, maxsize=10,
-                                                 loop=loop)
+                                                 encoding='utf-8', loop=loop)
     app['redis_pool'] = redis_pool
 
     # Mock
@@ -183,10 +186,8 @@ def start(loop, tcp_port):
     app.router.add_route('GET', '/health/', health)
 
     # TODO: Use prettyconf here
-    host = '127.0.0.1'
-    port = tcp_port
     handler = app.make_handler()
-    server = yield from loop.create_server(handler, host, port)
+    server = yield from loop.create_server(handler, api_host, api_port)
     name = server.sockets[0].getsockname()
     log.info('API started at http://{}:{}/'.format(*name))
     return server, handler, redis_pool
