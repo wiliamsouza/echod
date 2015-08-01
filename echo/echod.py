@@ -5,18 +5,24 @@ import sys
 import asyncio
 import logging
 
+from prettyconf import config
+
 from echo import api
 
 
+debug = config("DEBUG", default=False, cast=config.boolean)
 log = logging.getLogger('echo')
-log.addHandler(logging.StreamHandler(sys.stdout))
-log.setLevel(logging.DEBUG)
+if debug:
+    log.addHandler(logging.StreamHandler(sys.stdout))
+    log.setLevel(logging.INFO)
 
-if __name__ == '__main__':
+
+def main():
     loop = asyncio.get_event_loop()
-    tcp_port = 8080
+    api_host = config('ECHO_API_HOST', default='127.0.0.1')
+    api_port = config('ECHO_API_PORT', default=9876)
     server, handler, redis_pool = loop.run_until_complete(
-        api.start(loop, tcp_port))
+        api.start(loop, api_host, api_port))
 
     try:
         loop.run_forever()
@@ -28,3 +34,8 @@ if __name__ == '__main__':
         api.stop(loop)
 
     loop.close()
+    sys.exit(0)
+
+
+if __name__ == '__main__':
+    main()
