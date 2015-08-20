@@ -1,8 +1,10 @@
 # coding: utf-8
 
 import json
+import socket
 import hashlib
 import asyncio
+from contextlib import closing
 
 
 @asyncio.coroutine
@@ -65,3 +67,24 @@ def hash_dict(dictionary):
 
 def compare_hash(expected_hash, received_hash):
     return expected_hash == received_hash
+
+
+def unused_tcp_port():
+    """ Unused tcp port
+
+    Find an unused localhost TCP port from 1024-65535 and return it.
+
+    From:
+
+        github.com/pytest-dev/pytest-asyncio/blob/master/pytest_asyncio/plugin.py
+
+    See it own LICENSE file for details
+    """
+    with closing(socket.socket()) as sock:
+        sock.bind(('127.0.0.1', 0))
+        return sock.getsockname()[1]
+
+
+def make_server(protocol):
+    from .protocol import HTTPProxy
+    return HTTPProxy

@@ -4,6 +4,7 @@ import json
 import uuid
 import asyncio
 import logging
+import functools
 
 import aioredis
 
@@ -12,7 +13,8 @@ from aiohttp import web
 from prettyconf import config
 
 from echo.utils import (encode_json, decode_json, generate_key, normalize_path,
-                        request_to_dict, hash_dict, compare_hash)
+                        request_to_dict, hash_dict, compare_hash,
+                        unused_tcp_port)
 
 log = logging.getLogger(__name__)
 app = None
@@ -46,7 +48,21 @@ def get_proxy(request):
 
 @asyncio.coroutine
 def put_proxy(request):
-    return web.Response(text=json.dumps({'status': 'ok'}),
+    log.info('put proxy')
+    data = yield from request.json()
+    # protocol = data['protocol']
+    backend = data['backend']
+    from .protocol import HTTPProxy
+    ProxyServer = functools.partial(HTTPProxy, backend=backend)
+    host = request.app['host']
+    port = unused_tcp_port()
+    proxy_server = yield from request.app.loop.create_server(ProxyServer,
+                                                             host,
+                                                             port)
+    address = proxy_server.sockets[0].getsockname()
+    path = 'http://{}:{}/'.format(*address)
+    return web.Response(text=json.dumps({'path': path}),
+                        status=201,
                         content_type='application/json')
 
 
@@ -156,6 +172,8 @@ def health(request):
 def start(loop, api_host='127.0.0.1', api_port=9876):
     app = web.Application(loop=loop)
     app['mock_db'] = {}
+    app['host'] = api_host
+
     redis_address = (config('ECHO_REDIS_HOST', default='127.0.0.1'),
                      config('ECHO_REDIS_PORT', default=6379))
     redis_db = config('ECHO_REDIS_DB', default=0)
@@ -185,11 +203,10 @@ def start(loop, api_host='127.0.0.1', api_port=9876):
     # Health
     app.router.add_route('GET', '/health/', health)
 
-    # TODO: Use prettyconf here
     handler = app.make_handler()
     server = yield from loop.create_server(handler, api_host, api_port)
-    name = server.sockets[0].getsockname()
-    log.info('API started at http://{}:{}/'.format(*name))
+    address = server.sockets[0].getsockname()
+    log.info('API started at http://{}:{}/'.format(*address))
     return server, handler, redis_pool
 
 

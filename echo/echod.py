@@ -12,9 +12,14 @@ from echo import api
 
 debug = config("DEBUG", default=False, cast=config.boolean)
 log = logging.getLogger('echo')
+loga = logging.getLogger('asyncio')
 if debug:
-    log.addHandler(logging.StreamHandler(sys.stdout))
-    log.setLevel(logging.INFO)
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter('[%(asctime)s] %(levelname)s [%(name)s:%(lineno)s] ')
+    log.addHandler(handler)
+    log.setLevel(logging.DEBUG)
+    loga.addHandler(logging.StreamHandler(sys.stdout))
+    loga.setLevel(logging.DEBUG)
 
 
 def main():

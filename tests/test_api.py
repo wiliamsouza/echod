@@ -134,7 +134,7 @@ def test_health(api_server):
 
 @pytest.mark.asyncio
 def test_queue_request_return_status_200(api_server):
-    url = urljoin(api_server, urljoin(api_server, '/callbacks/app/queue/'))
+    url = urljoin(api_server, '/callbacks/app/queue/')
     response = yield from aiohttp.request('POST',
                                           url,
                                           data=json_payload)
@@ -144,7 +144,7 @@ def test_queue_request_return_status_200(api_server):
 
 @pytest.mark.asyncio
 def test_queue_request_return_json(api_server):
-    url = urljoin(api_server, urljoin(api_server, '/callbacks/app/queue/'))
+    url = urljoin(api_server, '/callbacks/app/queue/')
     response = yield from aiohttp.request('POST', url,
                                           data=json_payload)
 
@@ -431,3 +431,61 @@ def test_clean_requests_multiple_requests(api_server, redis):
     url_clean = urljoin(api_server, '/callbacks/_clean/app/queue/')
     yield from aiohttp.request('GET', url_clean)
     assert not redis.exists('app-queue')
+
+
+# Proxy
+
+
+@pytest.mark.asyncio
+def test_get_proxy(api_server):
+    url = urljoin(api_server, '/proxies/')
+    response = yield from aiohttp.request('GET', url)
+
+    assert response.status == 200
+    assert response.reason == 'OK'
+    assert response.headers['content-type'] == content_type
+    response_json = yield from response.json()
+    assert response_json == {'proxies': []}
+
+
+@pytest.mark.asyncio
+def test_put_proxy(api_server):
+    url = urljoin(api_server, '/proxies/')
+
+    request_headers = {
+        'content_type': 'application/json',
+        'accept': 'application/json',
+    }
+
+    expectation = {
+        'backend': 'google.com:80',
+        # 'behaviour': {'20:delay': {'before': True, 'sleep': 1}},
+        'protocol': {'http': {'buffer': 8124, 'keep_alive': False,
+                              'overwrite_host_header': True,
+                              'reuse_socket': False}}
+    }
+    import ipdb; ipdb.set_trace()  # Breakpoint
+
+    # Configure the proxy
+    response = yield from aiohttp.request('PUT', url,
+                                          data=json.dumps(expectation),
+                                          headers=request_headers)
+
+    assert response.status == 201
+    assert response.reason == 'Created'
+    assert response.headers['content-type'] == content_type
+    response_json = yield from response.json()
+    assert 'path' in response_json.keys()
+
+    import ipdb; ipdb.set_trace()  # Breakpoint
+    # Use the proxy
+    get_url = urljoin(api_server, response_json['path'])
+    response = yield from aiohttp.request('get', get_url,
+                                          headers=request_headers)
+
+    assert response.status == 201
+    assert response.reason == 'Created'
+    assert response.headers['content-type'] == content_type
+    response_json = yield from response.json()
+    assert 'email' in response_json.keys()
+    assert 'name' in response_json.keys()
