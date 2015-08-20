@@ -10,7 +10,7 @@ from setuptools.command.test import test as TestCommand
 here = os.path.abspath(os.path.dirname(__file__))
 
 setup_requires = ['pytest']
-install_requires = ['aiohttp==0.16.5', 'aioredis==0.2.2', 'prettyconf==0.3.3']
+install_requires = ['aiohttp==0.16.5', 'aioredis==0.2.2', 'prettyconf==1.1.2']
 dev_requires = ['pyflakes', 'pep8', 'pylint', 'check-manifest',
                 'ipython', 'ipdb', 'sphinx', 'sphinx_rtd_theme',
                 'sphinxcontrib-napoleon']
