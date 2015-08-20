@@ -134,7 +134,7 @@ def test_health(api_server):
 
 @pytest.mark.asyncio
 def test_queue_request_return_status_200(api_server):
-    url = urljoin(api_server, urljoin(api_server, '/callbacks/app/queue/'))
+    url = urljoin(api_server, '/callbacks/app/queue/')
     response = yield from aiohttp.request('POST',
                                           url,
                                           data=json_payload)
@@ -144,7 +144,7 @@ def test_queue_request_return_status_200(api_server):
 
 @pytest.mark.asyncio
 def test_queue_request_return_json(api_server):
-    url = urljoin(api_server, urljoin(api_server, '/callbacks/app/queue/'))
+    url = urljoin(api_server, '/callbacks/app/queue/')
     response = yield from aiohttp.request('POST', url,
                                           data=json_payload)
 
