@@ -8,7 +8,6 @@ services:
       - redis-server
 
 script:
-    - pip install pytest-asyncio
     - python setup.py test
 
 after_success:

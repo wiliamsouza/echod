@@ -185,11 +185,10 @@ def start(loop, api_host='127.0.0.1', api_port=9876):
     # Health
     app.router.add_route('GET', '/health/', health)
 
-    # TODO: Use prettyconf here
     handler = app.make_handler()
     server = yield from loop.create_server(handler, api_host, api_port)
-    name = server.sockets[0].getsockname()
-    log.info('API started at http://{}:{}/'.format(*name))
+    address = server.sockets[0].getsockname()
+    log.info('API started at http://{}:{}/'.format(*address))
     return server, handler, redis_pool
 
 

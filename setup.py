@@ -15,7 +15,7 @@ dev_requires = ['pyflakes', 'pep8', 'pylint', 'check-manifest',
                 'ipython', 'ipdb', 'sphinx', 'sphinx_rtd_theme',
                 'sphinxcontrib-napoleon']
 tests_require = ['pytest-cov', 'pytest-cache', 'pytest-timeout',
-                 'pytest-asyncio', 'tox', 'redis']
+                 'pytest-asyncio==0.2.0', 'tox', 'redis']
 dev_requires.append(tests_require)
 
 version = "0.0.0"
@@ -118,8 +118,8 @@ setup(
     },
     cmdclass={
         "version": VersionCommand,
+        'test': PyTest,
         "tox": Tox,
-        'test': PyTest
     },
     entry_points={
         'console_scripts': [
