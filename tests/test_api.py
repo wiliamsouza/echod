@@ -7,7 +7,7 @@ import aiohttp
 
 import pytest
 
-from echo.utils import decode_json
+from echod.utils import decode_json
 
 
 content_type = 'application/json; charset=utf-8'

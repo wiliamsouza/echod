@@ -7,11 +7,11 @@ import logging
 
 from prettyconf import config
 
-from echo import api
+from echod import api
 
 
 debug = config("DEBUG", default=False, cast=config.boolean)
-log = logging.getLogger('echo')
+log = logging.getLogger('echod')
 if debug:
     log.addHandler(logging.StreamHandler(sys.stdout))
     log.setLevel(logging.INFO)

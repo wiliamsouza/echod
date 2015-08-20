@@ -55,7 +55,7 @@ class PyTest(TestCommand):
     def finalize_options(self):
         TestCommand.finalize_options(self)
         self.test_args = ['--strict', '--verbose', '--tb=long',
-                          '--cov', 'echo', '--cov-report',
+                          '--cov', 'echod', '--cov-report',
                           'term-missing', 'tests']
         self.test_suite = True
 
@@ -91,9 +91,9 @@ class Tox(TestCommand):
 setup(
     name='echod',
     version='0.1.0',
-    description='Echo is a mock server, chaos proxy and a callback recorder.',
+    description='Echod is a mock server and a callback recorder.',
     long_description=long_description,
-    url='https://github.com/wiliamsouza/echo',
+    url='https://github.com/wiliamsouza/echod',
     author='The Echo Authors',
     author_email='wiliamsouza83@gmail.com',
     classifiers=[
@@ -123,7 +123,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'echod = echo.echod:main',
+            'echod = echod.echod:main',
         ]
     },
 )

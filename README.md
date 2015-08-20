@@ -24,7 +24,7 @@ Mock
 ----
 
 ```python
-import echo
+import echod
 
 
 mock_response = {

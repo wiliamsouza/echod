@@ -11,8 +11,9 @@ from aiohttp import web
 
 from prettyconf import config
 
-from echo.utils import (encode_json, decode_json, generate_key, normalize_path,
-                        request_to_dict, hash_dict, compare_hash)
+from echod.utils import (encode_json, decode_json, generate_key,
+                         normalize_path, request_to_dict, hash_dict,
+                         compare_hash)
 
 log = logging.getLogger(__name__)
 app = None

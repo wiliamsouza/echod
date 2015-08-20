@@ -2,7 +2,7 @@
 
 import pytest
 
-from echo import api
+from echod import api
 
 
 @pytest.yield_fixture(autouse=True)
