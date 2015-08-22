@@ -26,22 +26,14 @@ Mock
 ```python
 import echod
 
-
-mock_response = {
-    'status_code': 200,
-    'body': {...},
-}
-
-request_contain = {
-    'body': {...}
-}
-
 expectation = {
     'method': 'POST',
     'path': '/v1/users/',
-    'request': request_contain,
-    'response': mock_response,
+    'response': {'body': {'email': 'john@doe.com', 'name': 'John Doe'},
+                 'headers': {'content_type': 'application/json'},
+                 'status_code': 201}
 }
+
 
 with echod.mock(**expectation) as client:
     response = client.post()
