@@ -26,4 +26,12 @@ test:
 release: clean
 	git tag `python setup.py -q version`
 	git push origin `python setup.py -q version`
-	python setup.py sdist upload
+	python setup.py sdist
+	python setup.py bdist_wheel
+	twine upload dist/*
+
+rst:
+	@pandoc --from=markdown --to=rst --output=README.rst README.md
+
+docker:
+	docker build -f Dockerfile_dev -t echod .

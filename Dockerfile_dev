@@ -1,0 +1,8 @@
+FROM python:3.4
+
+COPY . /tmp/echod/
+RUN pip3 install -e /tmp/echod/
+
+EXPOSE 9876
+
+ENTRYPOINT ["echod"]

@@ -13,17 +13,17 @@ setup_requires = ['pytest']
 install_requires = ['aiohttp==0.16.5', 'aioredis==0.2.2', 'prettyconf==1.1.2']
 dev_requires = ['pyflakes', 'pep8', 'pylint', 'check-manifest',
                 'ipython', 'ipdb', 'sphinx', 'sphinx_rtd_theme',
-                'sphinxcontrib-napoleon']
+                'sphinxcontrib-napoleon', 'wheel', 'twine']
 tests_require = ['pytest-cov', 'pytest-cache', 'pytest-timeout',
                  'pytest-asyncio==0.2.0', 'tox', 'redis']
 dev_requires.append(tests_require)
 
 version = "0.0.0"
 changes = os.path.join(here, "CHANGES.md")
-match = b'^#*\s*(?P<version>[0-9]+\.[0-9]+(\.[0-9]+)?)$'
+match = '^#*\s*(?P<version>[0-9]+\.[0-9]+(\.[0-9]+)?)$'
 with codecs.open(changes, encoding='utf-8') as changes:
     for line in changes:
-        match = re.match(match, bytes(line, encoding='utf-8'))
+        match = re.match(match, line)
         if match:
             version = match.group("version")
             break
