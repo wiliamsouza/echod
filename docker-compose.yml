@@ -1,6 +1,5 @@
-echo:
-  image: wiliamsouza/echo:latest
-  command: echod
+echod:
+  image: wiliamsouza/echod:latest
   ports:
     - "9876:9876"
   links:

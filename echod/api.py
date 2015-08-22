@@ -157,9 +157,9 @@ def health(request):
 def start(loop, api_host='127.0.0.1', api_port=9876):
     app = web.Application(loop=loop)
     app['mock_db'] = {}
-    redis_address = (config('ECHO_REDIS_HOST', default='127.0.0.1'),
-                     config('ECHO_REDIS_PORT', default=6379))
-    redis_db = config('ECHO_REDIS_DB', default=0)
+    redis_address = (config('ECHOD_REDIS_HOST', default='127.0.0.1'),
+                     config('ECHOD_REDIS_PORT', default=6379))
+    redis_db = int(config('ECHOD_REDIS_DB', default=0))
     redis_pool = yield from aioredis.create_pool(redis_address, db=redis_db,
                                                  minsize=5, maxsize=10,
                                                  encoding='utf-8', loop=loop)

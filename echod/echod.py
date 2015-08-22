@@ -10,7 +10,7 @@ from prettyconf import config
 from echod import api
 
 
-debug = config("DEBUG", default=False, cast=config.boolean)
+debug = config("ECHOD_DEBUG", default=False, cast=config.boolean)
 log = logging.getLogger('echod')
 if debug:
     log.addHandler(logging.StreamHandler(sys.stdout))
@@ -19,8 +19,8 @@ if debug:
 
 def main():
     loop = asyncio.get_event_loop()
-    api_host = config('ECHO_API_HOST', default='127.0.0.1')
-    api_port = config('ECHO_API_PORT', default=9876)
+    api_host = config('ECHOD_API_HOST', default='127.0.0.1')
+    api_port = config('ECHOD_API_PORT', default=9876)
     server, handler, redis_pool = loop.run_until_complete(
         api.start(loop, api_host, api_port))
 

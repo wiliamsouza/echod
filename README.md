@@ -43,7 +43,7 @@ expectation = {
     'response': mock_response,
 }
 
-with echo.mock(**expectation) as client:
+with echod.mock(**expectation) as client:
     response = client.post()
     response.status_code == 200
 ```
@@ -56,7 +56,7 @@ callback
 import requests
 
 
-with echo.callback() as webhook:
+with echod.callback() as webhook:
     settings.callback_url = webhook.url
     requests.post()
     webhook.wait_callback(timeout=10)
