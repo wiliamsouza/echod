@@ -36,6 +36,11 @@ zero_length_header = {
     'Host': 'localhost'
 }
 
+request_headers = {
+    'content_type': 'application/json',
+    'accept': 'application/json',
+}
+
 
 # Mock tests
 
@@ -54,36 +59,17 @@ def test_get_mock(api_server):
 
 @pytest.mark.asyncio
 def test_put_mock(api_server):
-    response_must_contain = {
-        'status_code': 201,
-        'body': {
-            'name': 'John Doe',
-            'email': 'john@doe.com',
-        },
-        'headers': {
-            'content_type': 'application/json',
-        },
-    }
-
-    request_headers = {
-        'content_type': 'application/json',
-        'accept': 'application/json',
-    }
-
-    request_must_contain = {
-        'body': {
-            'name': 'John Doe',
-            'email': 'john@doe.com',
-            'password': 'secret',
-        },
-        'headers': request_headers,
-    }
-
     expectation = {
         'method': 'POST',
         'path': '/v1/users/',
-        'request': request_must_contain,
-        'response': response_must_contain,
+        'request': {'body': {'email': 'john@doe.com',
+                             'name': 'John Doe',
+                             'password': 'secret'},
+                    'headers': {'accept': 'application/json',
+                                'content_type': 'application/json'}},
+        'response': {'body': {'email': 'john@doe.com', 'name': 'John Doe'},
+                     'headers': {'content_type': 'application/json'},
+                     'status_code': 201}
     }
 
     url = urljoin(api_server, '/mocks/')
@@ -101,7 +87,7 @@ def test_put_mock(api_server):
 
     # Use the mock
     post_url = urljoin(api_server, response_json['path'])
-    post_body = json.dumps(request_must_contain['body'])
+    post_body = json.dumps(expectation['request']['body'])
     response = yield from aiohttp.request('POST', post_url,
                                           data=post_body,
                                           headers=request_headers)
@@ -112,6 +98,75 @@ def test_put_mock(api_server):
     response_json = yield from response.json()
     assert 'email' in response_json.keys()
     assert 'name' in response_json.keys()
+
+
+@pytest.mark.asyncio
+def test_put_mock_without_request_expectation(api_server):
+    expectation = {
+        'method': 'PUT',
+        'path': '/v1/users/',
+        'response': {'body': {'email': 'john@doe.com', 'name': 'John Doe'},
+                     'headers': {'content_type': 'application/json'},
+                     'status_code': 200}
+    }
+
+    url = urljoin(api_server, '/mocks/')
+
+    # Configure the mock
+    response = yield from aiohttp.request('PUT', url,
+                                          data=json.dumps(expectation),
+                                          headers=request_headers)
+
+    assert response.status == 201
+    assert response.reason == 'Created'
+    assert response.headers['content-type'] == content_type
+    response_json = yield from response.json()
+    assert 'path' in response_json.keys()
+
+    # Use the mock
+    put_url = urljoin(api_server, response_json['path'])
+    put_body = json.dumps({})
+    response = yield from aiohttp.request('PUT', put_url,
+                                          data=put_body,
+                                          headers=request_headers)
+
+    assert response.status == 200
+    assert response.reason == 'OK'
+    assert response.headers['content-type'] == content_type
+    response_json = yield from response.json()
+    assert 'email' in response_json.keys()
+    assert 'name' in response_json.keys()
+
+
+@pytest.mark.asyncio
+def test_method_not_allowed(api_server):
+    expectation = {
+        'method': 'GET',
+        'path': '/v1/users/',
+        'response': {'body': {'email': 'john@doe.com', 'name': 'John Doe'},
+                     'headers': {'content_type': 'application/json'},
+                     'status_code': 200}
+    }
+
+    url = urljoin(api_server, '/mocks/')
+
+    # Configure the mock
+    response = yield from aiohttp.request('PUT', url,
+                                          data=json.dumps(expectation),
+                                          headers=request_headers)
+
+    assert response.status == 201
+    assert response.reason == 'Created'
+    assert response.headers['content-type'] == content_type
+    response_json = yield from response.json()
+    assert 'path' in response_json.keys()
+
+    # Use the mock
+    put_url = urljoin(api_server, response_json['path'])
+    response = yield from aiohttp.request('PUT', put_url)
+
+    assert response.status == 405
+    assert response.reason == 'Method Not Allowed'
 
 
 # Health

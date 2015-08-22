@@ -130,18 +130,19 @@ def mock(request):
     # Check/Validate for KeyError
     config = request.app['mock_db'][request.path]
     response = config['response']['body']
-    expected = config['request']['body']
     status = config['response']['status_code']
     content_type = config['response']['headers']['content_type']
-    expected_hash = yield from hash_dict(expected)
-    received_hash = yield from hash_dict(received)
-    if not compare_hash(expected_hash, received_hash):
-        status = 400
-        response = {
-            'message': 'Received request data did not match with expected',
-            'received_data': received,
-            'expected_data': expected,
-        }
+    if 'request' in config:
+        expected = config['request']['body']
+        expected_hash = yield from hash_dict(expected)
+        received_hash = yield from hash_dict(received)
+        if not compare_hash(expected_hash, received_hash):
+            status = 400
+            response = {
+                'message': 'Received request data did not match with expected',
+                'received_data': received,
+                'expected_data': expected,
+            }
     return web.Response(text=json.dumps(response),
                         status=status,
                         content_type=content_type)
