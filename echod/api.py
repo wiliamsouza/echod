@@ -110,7 +110,6 @@ def clean_callback(request):
 @asyncio.coroutine
 def callback(request):
     # TODO: Add support for addtional_url
-
     app = request.match_info['app']
     queue = request.match_info['queue']
     key = yield from generate_key(app, queue)
@@ -127,7 +126,6 @@ def callback(request):
 @asyncio.coroutine
 def mock(request):
     received = yield from request.json()
-    # Check/Validate for KeyError
     config = request.app['mock_db'][request.path]
     response = config['response']['body']
     status = config['response']['status_code']

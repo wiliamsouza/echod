@@ -169,6 +169,17 @@ def test_method_not_allowed(api_server):
     assert response.reason == 'Method Not Allowed'
 
 
+@pytest.mark.asyncio
+def test_not_found(api_server):
+    post_url = urljoin(api_server, '/mock/noexist/url/')
+    post_body = '{}'
+    response = yield from aiohttp.request('POST', post_url,
+                                          data=post_body,
+                                          headers=request_headers)
+    assert response.status == 404
+    assert response.reason == 'Not Found'
+
+
 # Health
 
 
