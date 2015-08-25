@@ -1,5 +1,7 @@
+# coding: utf-8
+
 from wtforms import Form
-from wtforms.validators import AnyOf, InputRequired
+from wtforms.validators import AnyOf, DataRequired
 from wtforms.fields import FormField, StringField, IntegerField
 
 http_methods_validator_options = {
@@ -9,24 +11,19 @@ http_methods_validator_options = {
 }
 
 
-class HeadersForm(Form):
-    content_type = StringField('')
-    accept = StringField('')
-
-
 class RequestForm(Form):
-    body = StringField('', [InputRequired])
-    headers = FormField(HeadersForm)
+    body = StringField('')
+    headers = StringField('')
 
 
 class ResponseForm(Form):
-    body = StringField('', [InputRequired])
-    headers = FormField(HeadersForm)
-    status_code = IntegerField('', [InputRequired])
+    body = StringField('', [DataRequired()])
+    headers = StringField('', [DataRequired()])
+    status_code = IntegerField('', [DataRequired()])
 
 
 class MockForm(Form):
-    method = StringField('', [InputRequired,
+    method = StringField('', [DataRequired(),
                               AnyOf(**http_methods_validator_options)])
     path = StringField('',)
     request = FormField(RequestForm)
