@@ -3,11 +3,12 @@
 import json
 import asyncio
 
-import requests
 
 from wtforms.validators import ValidationError
 
 from prettyconf import config
+
+import aiohttp
 
 from echod import api
 from echod.forms import MockForm
@@ -33,40 +34,35 @@ class Mock(object):
         self.server_url = None
         self.address = (self.host, self.port)
 
-    @asyncio.coroutine
-    def _start_api(self):
-        # TODO: Search for a way to start the API server here.
-        self.loop.run_until_complete(
+    async def __aenter__(self):
+        # Start API
+        self.handler, self.redis_pool = self.loop.run_until_complete(
             api.start(self.loop, self.host, self.port))
 
-    def __enter__(self):
-        # Start API
-        asyncio.async(api.start(self.loop, self.host, self.port),
-                      loop=self.loop)
-
-        import ipdb; ipdb.set_trace()  # Breakpoint
         # Configure the mock
         self.server_url = 'http://{}:{}/mocks/'.format(*self.address)
-        response = requests.put(self.server_url,
-                                data=json.dumps(self.expectation),
-                                headers=request_headers)
+        response = await aiohttp.request('PUT', self.server_url,
+                                         headers=request_headers,
+                                         data=json.dumps(self.expectation))
         if response.status_code != 201:
             raise Exception('Erro creating mock.')
         self.mock_path = response.json()['path']
         return self
 
-    def __exit__(self, *args):
+    async def __aexit__(self, exec_type, exc, tb):
         # Clean up
         self.loop.run_until_complete(self.handler.finish_connections(1.0))
         self.loop.run_until_complete(self.redis_pool.clear())
         api.stop(self.loop)
         self.loop.close()
 
-    def health(self):
+    async def health(self):
         health_url = 'http://{}:{}/health/'.format(*self.address)
-        return requests.get(health_url)
+        response = await aiohttp.request('GET', health_url)
+        return response
 
-    def response(self):
+    """
+    async def response(self):
         body = ''
         headers = {}
         method = self.expectation['method'].lower()
@@ -75,5 +71,7 @@ class Mock(object):
             headers = self.expectation['request']['headers']
             body = self.expectation['request']['body']
 
-        request = getattr(requests, method)
-        return request(self.mock_path, headers=headers, data=json.dumps(body))
+        return await aiohttp.request(method, self.mock_path,
+                                     headers=headers,
+                                     data=json.dumps(body))
+    """
