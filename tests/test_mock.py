@@ -1,10 +1,9 @@
 # coding: utf-8
-import asyncio
 
 from echod.mock import Mock
 
 
-async def test_mock_client():
+def test_mock_client():
     expectation = {
         'method': 'POST',
         'path': '/v1/users/',
@@ -17,10 +16,9 @@ async def test_mock_client():
                      'headers': {'content_type': 'application/json'},
                      'status_code': 201}
     }
-    async with Mock(expectation) as client:
-        return await client.health()
+    with Mock(expectation) as client:
+        health = client.health()
+        response = client.response()
 
-
-loop = asyncio.get_event_loop()
-loop.run_until_complete(test_mock_client())
-loop.close()
+        assert health.status_code == 200
+        assert response.status_code == 201

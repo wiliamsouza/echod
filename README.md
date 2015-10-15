@@ -24,21 +24,28 @@ Mock
 ----
 
 ```python
-import echod
+from echod.mock import Mock
 
 expectation = {
     'method': 'POST',
     'path': '/v1/users/',
+    'request': {'body': {'email': 'john@doe.com',
+                         'name': 'John Doe',
+                         'password': 'secret'},
+                'headers': {'accept': 'application/json',
+                            'content_type': 'application/json'}},
     'response': {'body': {'email': 'john@doe.com', 'name': 'John Doe'},
                  'headers': {'content_type': 'application/json'},
                  'status_code': 201}
 }
 
+with Mock(expectation) as client:
+    # The mock URL is available to use
+    client.mock_url  # 'http://127.0.0.1:9876/mock/fbf01f94169640de9e585fe5e30a0958/v1/users/'
 
-with echod.mock(**expectation) as client:
-    response = client.post()
-    response.status_code == 200
-```
+    # This method will make a request to the mock
+    response = client.response()
+    assert response.status_code == 201
 
 
 callback

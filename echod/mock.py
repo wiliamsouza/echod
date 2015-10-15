@@ -1,17 +1,15 @@
 # coding: utf-8
 
 import json
-import asyncio
-
 
 from wtforms.validators import ValidationError
 
 from prettyconf import config
 
-import aiohttp
+import requests
 
-from echod import api
 from echod.forms import MockForm
+from echod.utils import url_path_join
 
 request_headers = {
     'content_type': 'application/json',
@@ -27,42 +25,41 @@ class Mock(object):
 
         self.expectation = expectation
 
-        self.loop = asyncio.get_event_loop()
         self.host = host or config('ECHOD_API_HOST', default='127.0.0.1')
         self.port = port or config('ECHOD_API_PORT', default=9876)
 
-        self.server_url = None
-        self.address = (self.host, self.port)
+        self.base_url = 'http://{}:{}'.format(self.host, self.port)
+        self._session = requests.Session()
 
-    async def __aenter__(self):
-        # Start API
-        self.handler, self.redis_pool = self.loop.run_until_complete(
-            api.start(self.loop, self.host, self.port))
+        self._urls = {
+            'health': url_path_join(self.base_url, 'health', '/'),
+            'mocks': url_path_join(self.base_url, 'mocks', '/'),
+            'response': None,
+        }
+        self.mock_url = None
 
-        # Configure the mock
-        self.server_url = 'http://{}:{}/mocks/'.format(*self.address)
-        response = await aiohttp.request('PUT', self.server_url,
+    def __enter__(self):
+        response = self._session.request(method='PUT', url=self._urls['mocks'],
                                          headers=request_headers,
-                                         data=json.dumps(self.expectation))
+                                         data=json.dumps(self.expectation),
+                                         timeout=1)
+
         if response.status_code != 201:
             raise Exception('Erro creating mock.')
-        self.mock_path = response.json()['path']
+
+        self.mock_url = url_path_join(self.base_url, response.json()['path'], '/')
+        self._urls['response'] = self.mock_url
+
         return self
 
-    async def __aexit__(self, exec_type, exc, tb):
+    def __exit__(self, exec_type, exc, tb):
         # Clean up
-        self.loop.run_until_complete(self.handler.finish_connections(1.0))
-        self.loop.run_until_complete(self.redis_pool.clear())
-        api.stop(self.loop)
-        self.loop.close()
+        pass
 
-    async def health(self):
-        health_url = 'http://{}:{}/health/'.format(*self.address)
-        response = await aiohttp.request('GET', health_url)
-        return response
+    def health(self):
+        return self._session.request(method='GET', url=self._urls['health'])
 
-    """
-    async def response(self):
+    def response(self):
         body = ''
         headers = {}
         method = self.expectation['method'].lower()
@@ -71,7 +68,5 @@ class Mock(object):
             headers = self.expectation['request']['headers']
             body = self.expectation['request']['body']
 
-        return await aiohttp.request(method, self.mock_path,
-                                     headers=headers,
-                                     data=json.dumps(body))
-    """
+        return self._session.request(method=method, url=self._urls['response'],
+                                     headers=headers, data=json.dumps(body))
