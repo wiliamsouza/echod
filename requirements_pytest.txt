@@ -1,1 +1,0 @@
-git+https://github.com/pytest-dev/pytest.git#egg=pytest
