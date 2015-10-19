@@ -18,7 +18,6 @@ request_headers = {
 def test_mock_client(api_server):
     expectation = {
         'method': 'POST',
-        'path': '/v1/users/',
         'request': {'body': {'email': 'john@doe.com',
                              'name': 'John Doe',
                              'password': 'secret'},
@@ -32,7 +31,7 @@ def test_mock_client(api_server):
     netloc = urlsplit(api_server).netloc
     host, port = splitport(netloc)
 
-    with Mock(expectation, host, port) as client:
+    with Mock(expectation) as client:
         health = client.health()
         response = client.response()
 
@@ -50,7 +49,6 @@ def test_mock_client(api_server):
 def test_mock_client_without_request(api_server):
     expectation = {
         'method': 'POST',
-        'path': '/v1/users/',
         'response': {'body': {'email': 'john@doe.com', 'name': 'John Doe'},
                      'headers': {'content_type': 'application/json'},
                      'status_code': 201}
@@ -59,7 +57,7 @@ def test_mock_client_without_request(api_server):
     netloc = urlsplit(api_server).netloc
     host, port = splitport(netloc)
 
-    with Mock(expectation, host, port) as client:
+    with Mock(expectation) as client:
         health = client.health()
         response = client.response()
 

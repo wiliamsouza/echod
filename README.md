@@ -29,7 +29,6 @@ from echod.mock import Mock
 # This will create a mock that accepts `POST` in the path `/v1/users/`.
 expectation = {
     'method': 'POST',
-    'path': '/v1/users/',
     'response': {'body': {'email': 'john@doe.com', 'name': 'John Doe'},
                  'headers': {'content_type': 'application/json'},
                  'status_code': 201}
@@ -37,23 +36,9 @@ expectation = {
 
 with Mock(expectation) as client:
     # The mock URL is available to use
-    client.mock_url  # 'http://127.0.0.1:9876/mock/fbf01f94169640de9e585fe5e30a0958/v1/users/'
+    client.mock_url  # 'http://127.0.0.1:9876/mock/fbf01f94169640de9e585fe5e30a0958/'
 
     # This method will make a request to the mock
     response = client.response()
     assert response.status_code == 201
-
-
-callback
---------
-
-```python
-import requests
-
-
-with echod.callback() as webhook:
-    settings.callback_url = webhook.url
-    requests.post()
-    webhook.wait_callback(timeout=10)
-    webhook.response.data == {...}
 ```

@@ -30,8 +30,7 @@ def get_mock(request):
 def put_mock(request):
     data = yield from request.json()
     uuid_hex = uuid.uuid4().hex
-    path = normalize_path('/mock/{}/{}/'.format(uuid_hex,
-                                                data['path']))
+    path = normalize_path('/mock/{}/'.format(uuid_hex))
     request.app.router.add_route(data['method'], path, mock)
     request.app['mock_db'][path] = data
     return web.Response(text=json.dumps({'path': path}),
