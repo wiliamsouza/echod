@@ -3,6 +3,7 @@
 import json
 import hashlib
 import asyncio
+from urllib.parse import urlsplit, urlunsplit
 
 
 @asyncio.coroutine
@@ -40,7 +41,6 @@ def decode_json(data):
 
 # TODO: Changes to use https://github.com/rbaier/python-urltools/
 #       do not forget PUBLIC_SUFFIX_LIST env var!
-@asyncio.coroutine
 def normalize_path(path):
     """ Normalize path
 
@@ -65,3 +65,13 @@ def hash_dict(dictionary):
 
 def compare_hash(expected_hash, received_hash):
     return expected_hash == received_hash
+
+
+def url_path_join(*parts):
+    def first_of_each(*sequences):
+        return (next((x for x in sequence if x), '') for sequence in sequences)
+    schemes, netlocs, paths, queries, fragments = zip(*(urlsplit(part) for part in parts))
+    scheme, netloc, query, fragment = first_of_each(schemes, netlocs, queries,
+                                                    fragments)
+    path = '/'.join(x.strip('/') for x in paths if x)
+    return urlunsplit((scheme, netloc, path, query, fragment))
