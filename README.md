@@ -16,7 +16,6 @@ have a lot of flexibility and support many start up methods.
 Echod server can be run as:
 
 * A standalone using `echod` command line tool.
-* A WSGI HTTP Server application.
 * A Docker instance container.
 
 
@@ -26,7 +25,7 @@ Mock
 ```python
 from echod.mock import Mock
 
-# This will create a mock that accepts `POST` in the path `/v1/users/`.
+# This will create a mock that accepts `POST`.
 expectation = {
     'method': 'POST',
     'response': {'body': {'email': 'john@doe.com', 'name': 'John Doe'},
@@ -35,7 +34,7 @@ expectation = {
 }
 
 with Mock(expectation) as client:
-    # The mock URL is available to use
+    # The URL for the mock
     client.mock_url  # 'http://127.0.0.1:9876/mock/fbf01f94169640de9e585fe5e30a0958/'
 
     # This method will make a request to the mock
